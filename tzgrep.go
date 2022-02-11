@@ -2,6 +2,7 @@ package tzgrep
 
 import (
 	"archive/tar"
+	"bufio"
 	"compress/bzip2"
 	"compress/gzip"
 	"io"
@@ -24,8 +25,9 @@ func New(expr string) (*TZgrep, error) {
 }
 
 type TZgrep struct {
-	Out chan Result
-	exp *regexp.Regexp
+	Out                chan Result
+	SkipName, SkipBody bool
+	exp                *regexp.Regexp
 }
 
 type Result struct {
@@ -34,6 +36,8 @@ type Result struct {
 }
 
 func (tz *TZgrep) Start(paths []string) {
+	// TODO: restrict number of open files
+	// TODO: buffer output to guarantee order
 	wg := sync.WaitGroup{}
 	wg.Add(len(paths))
 	go func() {
@@ -50,6 +54,10 @@ func (tz *TZgrep) Start(paths []string) {
 }
 
 func (tz *TZgrep) findPath(path string) {
+	if path == "-" {
+		tz.find(os.Stdin, []string{"-"})
+		return
+	}
 	f, err := os.Open(path)
 	if err != nil {
 		tz.Out <- Result{Path: []string{path}, Err: err}
@@ -59,11 +67,8 @@ func (tz *TZgrep) findPath(path string) {
 }
 
 func (tz *TZgrep) find(zr io.Reader, path []string) {
-	if tz.exp.MatchString(path[len(path)-1]) {
-		tz.Out <- Result{Path: path}
-	}
 	zf, isTar := newDecompressor(path[len(path)-1])
-	if !isTar {
+	if !isTar && tz.SkipBody {
 		return
 	}
 	r, err := zf(zr)
@@ -71,40 +76,56 @@ func (tz *TZgrep) find(zr io.Reader, path []string) {
 		tz.Out <- Result{Path: path, Err: err}
 	}
 	defer r.Close()
+
+	if !isTar {
+		if tz.exp.MatchReader(bufio.NewReader(r)) {
+			tz.Out <- Result{Path: path}
+		}
+		return
+	}
+
 	tr := tar.NewReader(r)
 	for h, err := tr.Next(); err != io.EOF; h, err = tr.Next() {
 		if err != nil {
 			tz.Out <- Result{Path: path, Err: err}
 			break
 		}
-		tz.find(tr, append(path[:len(path):len(path)], h.Name))
+		path = append(path[:len(path):len(path)], h.Name)
+		if !tz.SkipName {
+			if tz.exp.MatchString(h.Name) {
+				tz.Out <- Result{Path: path}
+			}
+		}
+		tz.find(tr, path)
 	}
 }
 
 type decompressor func(io.Reader) (io.ReadCloser, error)
 
-func newDecompressor(path string) (zf decompressor, ok bool) {
+func newDecompressor(path string) (zf decompressor, isTar bool) {
 	p := strings.ToLower(path)
 	switch {
-	case hasSuffixes(p, ".tar"):
-		return func(r io.Reader) (io.ReadCloser, error) {
-			return io.NopCloser(r), nil
-		}, true
 	case hasSuffixes(p, ".tar.gz", ".tgz", ".taz"):
-		return func(r io.Reader) (io.ReadCloser, error) {
-			r, err := gzip.NewReader(r)
-			return io.NopCloser(r), err
-		}, true
+		return gzReader, true
 	case hasSuffixes(p, ".tar.bz2", ".tar.bz", ".tbz", ".tbz2", ".tz2", ".tb2"):
-		return func(r io.Reader) (io.ReadCloser, error) {
-			return io.NopCloser(bzip2.NewReader(r)), nil
-		}, true
+		return bz2Reader, true
 	case hasSuffixes(p, ".tar.xz", ".txz"):
 		return xzReader, true
 	case hasSuffixes(p, ".tar.zst", ".tzst", ".tar.zstd"):
-		return zstdReader, true
+		return zstReader, true
+	case hasSuffixes(p, ".tar"):
+		return nopReader, true
+
+	case hasSuffixes(p, ".gz"):
+		return gzReader, false
+	case hasSuffixes(p, ".bz2", ".bz"):
+		return bz2Reader, false
+	case hasSuffixes(p, ".xz"):
+		return xzReader, false
+	case hasSuffixes(p, ".zst", ".zstd"):
+		return zstReader, false
 	default:
-		return nil, false
+		return nopReader, false
 	}
 }
 
@@ -117,11 +138,24 @@ func hasSuffixes(s string, suffixes ...string) bool {
 	return false
 }
 
+func nopReader(r io.Reader) (io.ReadCloser, error) {
+	return io.NopCloser(r), nil
+}
+
+func gzReader(r io.Reader) (io.ReadCloser, error) {
+	r, err := gzip.NewReader(r)
+	return io.NopCloser(r), err
+}
+
+func bz2Reader(r io.Reader) (io.ReadCloser, error) {
+	return io.NopCloser(bzip2.NewReader(r)), nil
+}
+
 func xzReader(r io.Reader) (io.ReadCloser, error) {
 	return zCmdReader(exec.Command("xz", "-d", "-T0"), r)
 }
 
-func zstdReader(r io.Reader) (io.ReadCloser, error) {
+func zstReader(r io.Reader) (io.ReadCloser, error) {
 	return zCmdReader(exec.Command("zstd", "-d"), r)
 }
 

@@ -1,4 +1,5 @@
 .idea
+/tzgrep
 
 # Binaries for programs and plugins
 *.exe
