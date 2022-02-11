@@ -45,14 +45,14 @@ func main() {
 }
 
 func grep(expr string, paths []string) error {
-	tz, err := ztgrep.New(expr)
+	zt, err := ztgrep.New(expr)
 	if err != nil {
 		return err
 	}
-	tz.SkipName = opts.Search.SkipName
-	tz.SkipBody = opts.Search.SkipBody
-	tz.Start(paths)
-	for res := range tz.Out {
+	zt.SkipName = opts.Search.SkipName
+	zt.SkipBody = opts.Search.SkipBody
+	zt.Start(paths)
+	for res := range zt.Out {
 		path := strings.Join(res.Path, ":")
 		if res.Err != nil {
 			log.Printf("ztgrep: %s: %s", path, res.Err)

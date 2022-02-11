@@ -35,53 +35,53 @@ type Result struct {
 	Err  error
 }
 
-func (tz *ZTgrep) Start(paths []string) {
+func (zt *ZTgrep) Start(paths []string) {
 	// TODO: restrict number of open files
 	// TODO: buffer output to guarantee order
 	wg := sync.WaitGroup{}
 	wg.Add(len(paths))
 	go func() {
 		wg.Wait()
-		close(tz.Out)
+		close(zt.Out)
 	}()
 	for _, p := range paths {
 		p := p
 		go func() {
-			tz.findPath(p)
+			zt.findPath(p)
 			wg.Done()
 		}()
 	}
 }
 
-func (tz *ZTgrep) findPath(path string) {
+func (zt *ZTgrep) findPath(path string) {
 	if path == "-" {
-		tz.find(os.Stdin, []string{"-"})
+		zt.find(os.Stdin, []string{"-"})
 		return
 	}
 	f, err := os.Open(path)
 	if err != nil {
-		tz.Out <- Result{Path: []string{path}, Err: err}
+		zt.Out <- Result{Path: []string{path}, Err: err}
 	}
 	defer f.Close()
-	tz.find(f, []string{path})
+	zt.find(f, []string{path})
 }
 
 // TODO: implement version that uses file headers to identify type
-func (tz *ZTgrep) find(zr io.Reader, path []string) {
+func (zt *ZTgrep) find(zr io.Reader, path []string) {
 	zf, isTar := newDecompressor(path[len(path)-1])
-	if !isTar && tz.SkipBody {
+	if !isTar && zt.SkipBody {
 		return
 	}
 	r, err := zf(zr)
 	if err != nil {
-		tz.Out <- Result{Path: path, Err: err}
+		zt.Out <- Result{Path: path, Err: err}
 		return
 	}
 	defer r.Close()
 
 	if !isTar {
-		if tz.exp.MatchReader(bufio.NewReader(r)) {
-			tz.Out <- Result{Path: path}
+		if zt.exp.MatchReader(bufio.NewReader(r)) {
+			zt.Out <- Result{Path: path}
 		}
 		return
 	}
@@ -89,16 +89,16 @@ func (tz *ZTgrep) find(zr io.Reader, path []string) {
 	tr := tar.NewReader(r)
 	for h, err := tr.Next(); err != io.EOF; h, err = tr.Next() {
 		if err != nil {
-			tz.Out <- Result{Path: path, Err: err}
+			zt.Out <- Result{Path: path, Err: err}
 			break
 		}
 		p := append(path[:len(path):len(path)], h.Name)
-		if !tz.SkipName {
-			if tz.exp.MatchString(h.Name) {
-				tz.Out <- Result{Path: p}
+		if !zt.SkipName {
+			if zt.exp.MatchString(h.Name) {
+				zt.Out <- Result{Path: p}
 			}
 		}
-		tz.find(tr, p)
+		zt.find(tr, p)
 	}
 }
 
