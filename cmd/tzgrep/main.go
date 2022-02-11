@@ -53,10 +53,11 @@ func grep(expr string, paths []string) error {
 	tz.SkipBody = opts.Search.SkipBody
 	tz.Start(paths)
 	for res := range tz.Out {
+		path := strings.Join(res.Path, ":")
 		if res.Err != nil {
-			log.Printf("tzgrep: %s", res.Err)
+			log.Printf("tzgrep: %s: %s", path, res.Err)
 		} else {
-			fmt.Println(strings.Join(res.Path, ":"))
+			fmt.Println(path)
 		}
 	}
 	return nil

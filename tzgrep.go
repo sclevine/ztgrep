@@ -75,6 +75,7 @@ func (tz *TZgrep) find(zr io.Reader, path []string) {
 	r, err := zf(zr)
 	if err != nil {
 		tz.Out <- Result{Path: path, Err: err}
+		return
 	}
 	defer r.Close()
 
@@ -91,13 +92,13 @@ func (tz *TZgrep) find(zr io.Reader, path []string) {
 			tz.Out <- Result{Path: path, Err: err}
 			break
 		}
-		path = append(path[:len(path):len(path)], h.Name)
+		p := append(path[:len(path):len(path)], h.Name)
 		if !tz.SkipName {
 			if tz.exp.MatchString(h.Name) {
-				tz.Out <- Result{Path: path}
+				tz.Out <- Result{Path: p}
 			}
 		}
-		tz.find(tr, path)
+		tz.find(tr, p)
 	}
 }
 
