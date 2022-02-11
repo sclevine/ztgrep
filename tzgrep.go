@@ -1,12 +1,10 @@
-package main
+package tzgrep
 
 import (
 	"archive/tar"
 	"compress/bzip2"
 	"compress/gzip"
-	"fmt"
 	"io"
-	"log"
 	"os"
 	"os/exec"
 	"regexp"
@@ -14,46 +12,7 @@ import (
 	"sync"
 )
 
-func main() {
-	log.SetFlags(0)
-
-	if len(os.Args) < 3 {
-		log.Fatal("Invalid args")
-	}
-	if err := tzgrep(os.Args[1], os.Args[2:]); err != nil {
-		log.Fatalf("Failed: %s", err)
-	}
-}
-
-func tzgrep(expr string, paths []string) error {
-	tz, err := NewTZgrep(expr)
-	if err != nil {
-		return err
-	}
-	wg := sync.WaitGroup{}
-	wg.Add(len(paths))
-	go func() {
-		wg.Wait()
-		tz.Close()
-	}()
-	for _, p := range paths {
-		p := p
-		go func() {
-			tz.FindPath(p)
-			wg.Done()
-		}()
-	}
-	for res := range tz.Out {
-		if res.Err != nil {
-			log.Printf("tzgrep: %s", res.Err)
-		} else {
-			fmt.Println(strings.Join(res.Path, ":"))
-		}
-	}
-	return nil
-}
-
-func NewTZgrep(expr string) (*TZgrep, error) {
+func New(expr string) (*TZgrep, error) {
 	exp, err := regexp.Compile(expr)
 	if err != nil {
 		return nil, err
@@ -74,20 +33,32 @@ type Result struct {
 	Err  error
 }
 
-func (tz *TZgrep) Close() {
-	close(tz.Out)
+func (tz *TZgrep) Start(paths []string) {
+	wg := sync.WaitGroup{}
+	wg.Add(len(paths))
+	go func() {
+		wg.Wait()
+		close(tz.Out)
+	}()
+	for _, p := range paths {
+		p := p
+		go func() {
+			tz.findPath(p)
+			wg.Done()
+		}()
+	}
 }
 
-func (tz *TZgrep) FindPath(path string) {
+func (tz *TZgrep) findPath(path string) {
 	f, err := os.Open(path)
 	if err != nil {
 		tz.Out <- Result{Path: []string{path}, Err: err}
 	}
 	defer f.Close()
-	tz.Find(f, []string{path})
+	tz.find(f, []string{path})
 }
 
-func (tz *TZgrep) Find(zr io.Reader, path []string) {
+func (tz *TZgrep) find(zr io.Reader, path []string) {
 	if tz.exp.MatchString(path[len(path)-1]) {
 		tz.Out <- Result{Path: path}
 	}
@@ -101,8 +72,12 @@ func (tz *TZgrep) Find(zr io.Reader, path []string) {
 	}
 	defer r.Close()
 	tr := tar.NewReader(r)
-	for h, err := tr.Next(); err != nil; h, err = tr.Next() {
-		tz.Find(tr, append(path[:len(path):len(path)], h.Name))
+	for h, err := tr.Next(); err != io.EOF; h, err = tr.Next() {
+		if err != nil {
+			tz.Out <- Result{Path: path, Err: err}
+			break
+		}
+		tz.find(tr, append(path[:len(path):len(path)], h.Name))
 	}
 }
 

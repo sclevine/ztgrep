@@ -1,2 +1,2 @@
 # tzgrep
-Recursive search through compressed tarballs
+Recursive search through compressed tarballs.
