@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 	"strings"
 
 	"github.com/jessevdk/go-flags"
@@ -11,8 +12,10 @@ import (
 )
 
 type Options struct {
-	SkipBody bool `short:"b" long:"skip-body" description:"Skip file bodies"`
-	SkipName bool `short:"n" long:"skip-name" description:"Skip file names inside of tarballs"`
+	Search struct {
+		SkipBody bool `short:"b" long:"skip-body" description:"Skip file bodies"`
+		SkipName bool `short:"n" long:"skip-name" description:"Skip file names inside of tarballs"`
+	} `group:"Search Options"`
 }
 
 var opts Options
@@ -21,6 +24,7 @@ func main() {
 	log.SetFlags(0)
 
 	parser := flags.NewParser(&opts, flags.HelpFlag|flags.PassAfterNonOption|flags.PassDoubleDash)
+	parser.Usage = "[OPTIONS] regexp paths..."
 	restArgs, err := parser.Parse()
 	if err != nil {
 		if err, ok := err.(*flags.Error); ok && err.Type == flags.ErrHelp {
@@ -29,7 +33,8 @@ func main() {
 		log.Fatalf("Invalid arguments: %s", err)
 	}
 	if len(restArgs) == 0 {
-		log.Fatal("Missing expression")
+		parser.WriteHelp(os.Stderr)
+		os.Exit(0)
 	}
 	if len(restArgs) == 1 {
 		restArgs = append(restArgs, "-")
@@ -44,8 +49,8 @@ func grep(expr string, paths []string) error {
 	if err != nil {
 		return err
 	}
-	tz.SkipName = opts.SkipName
-	tz.SkipBody = opts.SkipBody
+	tz.SkipName = opts.Search.SkipName
+	tz.SkipBody = opts.Search.SkipBody
 	tz.Start(paths)
 	for res := range tz.Out {
 		if res.Err != nil {

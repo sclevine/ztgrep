@@ -66,6 +66,7 @@ func (tz *TZgrep) findPath(path string) {
 	tz.find(f, []string{path})
 }
 
+// TODO: implement version that uses file headers to identify type
 func (tz *TZgrep) find(zr io.Reader, path []string) {
 	zf, isTar := newDecompressor(path[len(path)-1])
 	if !isTar && tz.SkipBody {
