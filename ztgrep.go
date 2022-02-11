@@ -1,4 +1,4 @@
-package tzgrep
+package ztgrep
 
 import (
 	"archive/tar"
@@ -13,18 +13,18 @@ import (
 	"sync"
 )
 
-func New(expr string) (*TZgrep, error) {
+func New(expr string) (*ZTgrep, error) {
 	exp, err := regexp.Compile(expr)
 	if err != nil {
 		return nil, err
 	}
-	return &TZgrep{
+	return &ZTgrep{
 		Out: make(chan Result),
 		exp: exp,
 	}, nil
 }
 
-type TZgrep struct {
+type ZTgrep struct {
 	Out                chan Result
 	SkipName, SkipBody bool
 	exp                *regexp.Regexp
@@ -35,7 +35,7 @@ type Result struct {
 	Err  error
 }
 
-func (tz *TZgrep) Start(paths []string) {
+func (tz *ZTgrep) Start(paths []string) {
 	// TODO: restrict number of open files
 	// TODO: buffer output to guarantee order
 	wg := sync.WaitGroup{}
@@ -53,7 +53,7 @@ func (tz *TZgrep) Start(paths []string) {
 	}
 }
 
-func (tz *TZgrep) findPath(path string) {
+func (tz *ZTgrep) findPath(path string) {
 	if path == "-" {
 		tz.find(os.Stdin, []string{"-"})
 		return
@@ -67,7 +67,7 @@ func (tz *TZgrep) findPath(path string) {
 }
 
 // TODO: implement version that uses file headers to identify type
-func (tz *TZgrep) find(zr io.Reader, path []string) {
+func (tz *ZTgrep) find(zr io.Reader, path []string) {
 	zf, isTar := newDecompressor(path[len(path)-1])
 	if !isTar && tz.SkipBody {
 		return

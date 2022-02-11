@@ -1,4 +1,4 @@
-module github.com/sclevine/tzgrep
+module github.com/sclevine/ztgrep
 
 go 1.17
 

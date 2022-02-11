@@ -1,4 +1,4 @@
-# tzgrep
+# ztgrep
 Recursively search through nested compressed tarballs and files.
 
 Supports the following compression formats:
@@ -12,7 +12,7 @@ Nested tarballs/files must have a recognizable file extension.
 
 ```
 Usage:
-  tzgrep [OPTIONS] regexp paths...
+  ztgrep [OPTIONS] regexp paths...
 
 Search Options:
   -b, --skip-body  Skip file bodies

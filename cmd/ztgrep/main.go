@@ -8,7 +8,7 @@ import (
 
 	"github.com/jessevdk/go-flags"
 
-	"github.com/sclevine/tzgrep"
+	"github.com/sclevine/ztgrep"
 )
 
 type Options struct {
@@ -45,7 +45,7 @@ func main() {
 }
 
 func grep(expr string, paths []string) error {
-	tz, err := tzgrep.New(expr)
+	tz, err := ztgrep.New(expr)
 	if err != nil {
 		return err
 	}
@@ -55,7 +55,7 @@ func grep(expr string, paths []string) error {
 	for res := range tz.Out {
 		path := strings.Join(res.Path, ":")
 		if res.Err != nil {
-			log.Printf("tzgrep: %s: %s", path, res.Err)
+			log.Printf("ztgrep: %s: %s", path, res.Err)
 		} else {
 			fmt.Println(path)
 		}
