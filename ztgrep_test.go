@@ -133,3 +133,47 @@ func TestZTgrep(t *testing.T) {
 		t.Error("Too few results")
 	}
 }
+
+
+func TestZTgrepZip(t *testing.T) {
+	zt, err := ztgrep.New("test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	zt.Start([]string{"testdata/test-l2.zip"})
+	tt := []string{
+		"testdata/test-l2.zip:test-l1.zip",
+		"testdata/test-l2.zip:test-l1.zip:test.tgz",
+		"testdata/test-l2.zip:test-l1.zip:test.tgz:testfile1",
+		"testdata/test-l2.zip:test-l1.zip:test.tgz:testfile1",
+		"testdata/test-l2.zip:test-l1.zip:test.tgz:testfile2",
+		"testdata/test-l2.zip:test-l1.zip:test.tgz:testfile2",
+		"testdata/test-l2.zip:test-l1.zip:test.zip",
+		"testdata/test-l2.zip:test-l1.zip:test.zip:testfile1",
+		"testdata/test-l2.zip:test-l1.zip:test.zip:testfile1",
+		"testdata/test-l2.zip:test-l1.zip:test.zip:testfile2",
+		"testdata/test-l2.zip:test-l1.zip:test.zip:testfile2",
+		"testdata/test-l2.zip:test-l1.zip:testfile1",
+		"testdata/test-l2.zip:test-l1.zip:testfile1",
+		"testdata/test-l2.zip:test-l1.zip:testfile2",
+		"testdata/test-l2.zip:test-l1.zip:testfile2",
+		"testdata/test-l2.zip:test.tgz",
+		"testdata/test-l2.zip:test.tgz:testfile1",
+		"testdata/test-l2.zip:test.tgz:testfile1",
+		"testdata/test-l2.zip:test.tgz:testfile2",
+		"testdata/test-l2.zip:test.tgz:testfile2",
+	}
+	i := 0
+	for res := range zt.Out {
+		if res.Err != nil {
+			t.Fatal(res.Err)
+		}
+		if p := strings.Join(res.Path, ":"); p != tt[i] {
+			t.Errorf("%s != %s", p, tt[i])
+		}
+		i++
+	}
+	if i != len(tt) {
+		t.Error("Too few results")
+	}
+}

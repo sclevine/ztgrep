@@ -1,5 +1,8 @@
 .idea
 /ztgrep
+/ztgrep-linux-*
+/ztgrep-macos-*
+/ztgrep-windows-*
 
 # Binaries for programs and plugins
 *.exe

@@ -15,6 +15,7 @@ type Options struct {
 	Search struct {
 		SkipBody bool `short:"b" long:"skip-body" description:"Skip file bodies"`
 		SkipName bool `short:"n" long:"skip-name" description:"Skip file names inside of tarballs"`
+		MaxZipSize int64 `short:"z" long:"max-zip-size" default:"0" default-mask:"10 MB" description:"Maximum zip file size to search"`
 	} `group:"Search Options"`
 }
 
@@ -48,6 +49,9 @@ func grep(expr string, paths []string) error {
 	zt, err := ztgrep.New(expr)
 	if err != nil {
 		return err
+	}
+	if opts.Search.MaxZipSize != 0 {
+		zt.MaxZipSize = opts.Search.MaxZipSize
 	}
 	zt.SkipName = opts.Search.SkipName
 	zt.SkipBody = opts.Search.SkipBody
