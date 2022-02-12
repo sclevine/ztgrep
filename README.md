@@ -1,8 +1,10 @@
 # ztgrep
 
-Search for file names and contents through nested archives.
+[![GoDoc](https://pkg.go.dev/badge/github.com/sclevine/ztgrep?status.svg)](https://pkg.go.dev/github.com/sclevine/ztgrep)
 
-Useful for locating data lost within many levels of compressed archives.
+Search for file names and contents within nested compressed archives.
+
+Useful for locating data lost within many levels of compressed archives without using additional storage.
 
 Supports the following compression formats for **both archives and files**:
 - gzip
@@ -19,6 +21,7 @@ Nested archives and compressed files must have a recognizable file extension to 
 
 If multiple paths are specified, they are searched in parallel with nondeterministic output order.
 However, output order is deterministic for any single path.
+Only one path per CPU is searched concurrently.
 
 Nested ZIP files must be read into memory to be searched.
 By default, ZIP files larger 10 MB are not searched.
@@ -31,7 +34,7 @@ Usage:
 Search Options:
   -b, --skip-body     Skip file bodies
   -n, --skip-name     Skip file names inside of tarballs
-  -z, --max-zip-size= Maximum zip file size to search (default: 10 MB)
+  -z, --max-zip-size= Maximum zip file size to search in bytes (default: 10 MB)
 
 General Options:
   -v, --version       Return ztgrep version
@@ -39,3 +42,14 @@ General Options:
 Help Options:
   -h, --help          Show this help message
 ```
+
+### Installation
+
+Binaries for macOS, Linux, and Windows are [attached to each release](https://github.com/sclevine/ztgrep/releases).
+
+`ztgrep` is also available as a [Docker image](https://hub.docker.com/r/sclevine/ztgrep).
+
+### Go Package
+
+ztgrep may be imported as a Go package.
+See [godoc](https://pkg.go.dev/github.com/sclevine/ztgrep) for details.

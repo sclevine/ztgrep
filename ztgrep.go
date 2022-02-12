@@ -24,9 +24,11 @@ import (
 const defaultMaxZipSize = 10 << (10 * 2) // 10 MB
 
 var cpuLock = semaphore.NewWeighted(int64(runtime.NumCPU()))
+
 func acquireCPU() { cpuLock.Acquire(context.Background(), 1) }
 func releaseCPU() { cpuLock.Release(1) }
 
+// New returns a *ZTgrep given a regular expression following https://golang.org/s/re2syntax
 func New(expr string) (*ZTgrep, error) {
 	exp, err := regexp.Compile(expr)
 	if err != nil {
@@ -38,18 +40,23 @@ func New(expr string) (*ZTgrep, error) {
 	}, nil
 }
 
+// ZTgrep searchs for file names and contents within nested compressed archives.
 type ZTgrep struct {
-	MaxZipSize int64
-	SkipName   bool
-	SkipBody   bool
-	exp        *regexp.Regexp
+	MaxZipSize int64 // maximum size of zip file to search (held in memory)
+	SkipName   bool  // skip file names
+	SkipBody   bool  // skip file contents
+
+	exp *regexp.Regexp
 }
 
+// Result contains each matching path in Path.
+// Each entry in Path[1:] represents a file nested in the previous archive.
 type Result struct {
 	Path []string
 	Err  error
 }
 
+// Start searches paths in parallel, returning results via a channel
 func (zt *ZTgrep) Start(paths []string) <-chan Result {
 	// TODO: restrict number of open files
 	// TODO: buffer output to guarantee order

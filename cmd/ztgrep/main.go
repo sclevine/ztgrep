@@ -15,7 +15,7 @@ type Options struct {
 	Search struct {
 		SkipBody bool `short:"b" long:"skip-body" description:"Skip file bodies"`
 		SkipName bool `short:"n" long:"skip-name" description:"Skip file names inside of tarballs"`
-		MaxZipSize int64 `short:"z" long:"max-zip-size" default:"0" default-mask:"10 MB" description:"Maximum zip file size to search"`
+		MaxZipSize int64 `short:"z" long:"max-zip-size" default:"0" default-mask:"10 MB" description:"Maximum zip file size to search in bytes"`
 	} `group:"Search Options"`
 
 	General struct {
