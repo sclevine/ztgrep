@@ -12,7 +12,6 @@ func TestZTgrep(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	zt.Start([]string{"testdata/test-l2.tar.gz"})
 	tt := []string{
 		"testdata/test-l2.tar.gz:test-l1.tar",
 		"testdata/test-l2.tar.gz:test-l1.tar:test.tar.bz2",
@@ -120,7 +119,7 @@ func TestZTgrep(t *testing.T) {
 		"testdata/test-l2.tar.gz:testfile3",
 	}
 	i := 0
-	for res := range zt.Out {
+	for res := range zt.Start([]string{"testdata/test-l2.tar.gz"}) {
 		if res.Err != nil {
 			t.Fatal(res.Err)
 		}
@@ -140,7 +139,6 @@ func TestZTgrepZip(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	zt.Start([]string{"testdata/test-l2.zip"})
 	tt := []string{
 		"testdata/test-l2.zip:test-l1.zip",
 		"testdata/test-l2.zip:test-l1.zip:test.tgz",
@@ -164,7 +162,7 @@ func TestZTgrepZip(t *testing.T) {
 		"testdata/test-l2.zip:test.tgz:testfile2",
 	}
 	i := 0
-	for res := range zt.Out {
+	for res := range zt.Start([]string{"testdata/test-l2.zip"}) {
 		if res.Err != nil {
 			t.Fatal(res.Err)
 		}

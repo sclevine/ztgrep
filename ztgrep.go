@@ -7,17 +7,25 @@ import (
 	"bytes"
 	"compress/bzip2"
 	"compress/gzip"
+	"context"
 	"errors"
 	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"regexp"
+	"runtime"
 	"strings"
 	"sync"
+
+	"golang.org/x/sync/semaphore"
 )
 
 const defaultMaxZipSize = 10 << (10 * 2) // 10 MB
+
+var cpuLock = semaphore.NewWeighted(int64(runtime.NumCPU()))
+func acquireCPU() { cpuLock.Acquire(context.Background(), 1) }
+func releaseCPU() { cpuLock.Release(1) }
 
 func New(expr string) (*ZTgrep, error) {
 	exp, err := regexp.Compile(expr)
@@ -25,14 +33,12 @@ func New(expr string) (*ZTgrep, error) {
 		return nil, err
 	}
 	return &ZTgrep{
-		Out:        make(chan Result),
 		MaxZipSize: defaultMaxZipSize,
 		exp:        exp,
 	}, nil
 }
 
 type ZTgrep struct {
-	Out        chan Result
 	MaxZipSize int64
 	SkipName   bool
 	SkipBody   bool
@@ -44,54 +50,60 @@ type Result struct {
 	Err  error
 }
 
-func (zt *ZTgrep) Start(paths []string) {
+func (zt *ZTgrep) Start(paths []string) <-chan Result {
 	// TODO: restrict number of open files
 	// TODO: buffer output to guarantee order
+	out := make(chan Result)
 	wg := sync.WaitGroup{}
 	wg.Add(len(paths))
 	go func() {
 		wg.Wait()
-		close(zt.Out)
+		close(out)
 	}()
-	for _, p := range paths {
-		p := p
-		go func() {
-			zt.findPath(p)
-			wg.Done()
-		}()
-	}
+	go func() {
+		for _, p := range paths {
+			p := p
+			acquireCPU() // encourge ordered output
+			go func() {
+				zt.findPath(out, p)
+				releaseCPU()
+				wg.Done()
+			}()
+		}
+	}()
+	return out
 }
 
-func (zt *ZTgrep) findPath(path string) {
+func (zt *ZTgrep) findPath(out chan<- Result, path string) {
 	if path == "-" {
-		zt.find(os.Stdin, []string{"-"})
+		zt.find(out, os.Stdin, []string{"-"})
 		return
 	}
 	f, err := os.Open(path)
 	if err != nil {
-		zt.Out <- Result{Path: []string{path}, Err: err}
+		out <- Result{Path: []string{path}, Err: err}
 		return
 	}
 	defer f.Close()
-	zt.find(f, []string{path})
+	zt.find(out, f, []string{path})
 }
 
 // TODO: implement version that uses file headers to identify type
-func (zt *ZTgrep) find(zr io.Reader, path []string) {
+func (zt *ZTgrep) find(out chan<- Result, zr io.Reader, path []string) {
 	zf, xf := zt.newDecompressor(path[len(path)-1])
 	if xf == nil && zt.SkipBody {
 		return
 	}
 	r, err := zf(zr)
 	if err != nil {
-		zt.Out <- Result{Path: path, Err: err}
+		out <- Result{Path: path, Err: err}
 		return
 	}
 	defer r.Close()
 
 	if xf == nil {
 		if zt.exp.MatchReader(bufio.NewReader(r)) {
-			zt.Out <- Result{Path: path}
+			out <- Result{Path: path}
 		}
 		return
 	}
@@ -100,13 +112,13 @@ func (zt *ZTgrep) find(zr io.Reader, path []string) {
 		p := append(path[:len(path):len(path)], name)
 		if !zt.SkipName {
 			if zt.exp.MatchString(name) {
-				zt.Out <- Result{Path: p}
+				out <- Result{Path: p}
 			}
 		}
-		zt.find(fr, p)
+		zt.find(out, fr, p)
 		return nil
 	}); err != nil {
-		zt.Out <- Result{Path: path, Err: err}
+		out <- Result{Path: path, Err: err}
 		return
 	}
 }

@@ -55,8 +55,7 @@ func grep(expr string, paths []string) error {
 	}
 	zt.SkipName = opts.Search.SkipName
 	zt.SkipBody = opts.Search.SkipBody
-	zt.Start(paths)
-	for res := range zt.Out {
+	for res := range zt.Start(paths) {
 		path := strings.Join(res.Path, ":")
 		if res.Err != nil {
 			log.Printf("ztgrep: %s: %s", path, res.Err)
