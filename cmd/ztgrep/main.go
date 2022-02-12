@@ -17,9 +17,16 @@ type Options struct {
 		SkipName bool `short:"n" long:"skip-name" description:"Skip file names inside of tarballs"`
 		MaxZipSize int64 `short:"z" long:"max-zip-size" default:"0" default-mask:"10 MB" description:"Maximum zip file size to search"`
 	} `group:"Search Options"`
+
+	General struct {
+		Version bool `short:"v" long:"version" description:"Return ztgrep version"`
+	} `group:"General Options"`
 }
 
-var opts Options
+var (
+	Version = "0.0.0"
+	opts Options
+)
 
 func main() {
 	log.SetFlags(0)
@@ -32,6 +39,10 @@ func main() {
 			log.Fatal(err)
 		}
 		log.Fatalf("Invalid arguments: %s", err)
+	}
+	if opts.General.Version {
+		fmt.Printf("ztgrep v%s\n", Version)
+		os.Exit(0)
 	}
 	if len(restArgs) == 0 {
 		parser.WriteHelp(os.Stderr)

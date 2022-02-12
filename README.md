@@ -33,6 +33,9 @@ Search Options:
   -n, --skip-name     Skip file names inside of tarballs
   -z, --max-zip-size= Maximum zip file size to search (default: 10 MB)
 
+General Options:
+  -v, --version       Return ztgrep version
+
 Help Options:
   -h, --help          Show this help message
 ```
