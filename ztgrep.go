@@ -251,7 +251,9 @@ type splitCloser struct {
 func (zt *ZTgrep) readZip(r io.Reader) (*zip.Reader, error) {
 	if f, ok := r.(*os.File); ok && f != os.Stdin {
 		if fi, err := f.Stat(); err == nil {
-			return zip.NewReader(f, fi.Size())
+			if n := fi.Size(); n > 0 {
+				return zip.NewReader(f, n)
+			}
 		}
 	}
 	limitedReader := &io.LimitedReader{R: r, N: zt.MaxZipSize}
@@ -260,7 +262,7 @@ func (zt *ZTgrep) readZip(r io.Reader) (*zip.Reader, error) {
 		return nil, err
 	}
 	if limitedReader.N <= 0 {
-		return nil, errors.New("zip file larger than limit")
+		return nil, errors.New("nested zip file larger than limit")
 	}
 	br := bytes.NewReader(data)
 	return zip.NewReader(br, br.Size())
