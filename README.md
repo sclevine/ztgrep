@@ -5,7 +5,7 @@
 
 Search inside nested archives.
 
-Useful for locating data lost within many levels of compressed archives without using additional storage.
+Useful for locating data lost inside many levels of compressed archives without using additional storage.
 
 Supports the following compression formats for **both archives and files**:
 - gzip
@@ -18,7 +18,7 @@ As well as the following archive formats:
 - Tar (V7, USTAR, PAX, GNU, STAR)
 - [ZIP](https://en.wikipedia.org/wiki/ZIP_(file_format)) (with size limitation)
 
-Nested archives and compressed files must have a recognizable file extension to be searched.
+Compressed files and archives must have a recognizable file extension to be searched.
 
 If multiple paths are specified, they are searched in parallel with nondeterministic output order.
 However, output order is deterministic for any single path.
@@ -26,7 +26,7 @@ Only one path per CPU is searched concurrently.
 
 Nested ZIP files must be read into memory to be searched.
 By default, ZIP files larger 10 MB are not searched.
-The `-z` option may be used to specify this size limit.
+The `-z` option may be used to adjust the size limit.
 
 ```
 Usage:
