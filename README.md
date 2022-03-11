@@ -1,8 +1,9 @@
 # ztgrep
 
 [![GoDoc](https://pkg.go.dev/badge/github.com/sclevine/ztgrep?status.svg)](https://pkg.go.dev/github.com/sclevine/ztgrep)
+[![Tests](https://github.com/sclevine/ztgrep/actions/workflows/go.yml/badge.svg)](https://github.com/sclevine/ztgrep/actions/workflows/go.yml)
 
-Search for file names and contents within nested compressed archives.
+Search inside nested archives.
 
 Useful for locating data lost within many levels of compressed archives without using additional storage.
 
@@ -45,7 +46,11 @@ Help Options:
 
 ### Installation
 
-Binaries for macOS, Linux, and Windows are [attached to each release](https://github.com/sclevine/ztgrep/releases).
+Binaries for macOS, Linux, and Windows are [attached to each release](https://github.com/sclevine/ztgrep/releases) and available via [Homebrew](https://brew.sh):
+```
+brew install sclevine/tap/ztgrep
+```
+
 
 `ztgrep` is also available as a [Docker image](https://hub.docker.com/r/sclevine/ztgrep).
 
